@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "proxmox" {
- endpoint = var.pm_endpoint
+ endpoint = var.endpoint
  username = var.username
  password = var.password
  insecure = true
@@ -22,7 +22,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   name = "terraform-provider-proxmox-ubuntu-vm"
   description = "Managed by Terraform"
   tags        = ["terraform", "ubuntu"]
-  node_name   = var.pm_node
+  node_name   = var.node
 
   clone {
     vm_id = 9000
