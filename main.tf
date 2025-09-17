@@ -8,21 +8,21 @@ terraform {
 }
 
 provider "proxmox" {
- endpoint   = "https://10.0.0.50:8006/"
- username = "root@pam"
- password = ""
+ endpoint = var.pm_endpoint
+ username = var.username
+ password = var.password
  insecure = true
 }
 
 data "local_file" "ssh_public_key" {
-  filename = "/Users/dannyvelasquez/.ssh/proxmox-id_ed25519.pub"
+  filename = var.ssh_public_key
 }
 
 resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   name = "terraform-provider-proxmox-ubuntu-vm"
   description = "Managed by Terraform"
   tags        = ["terraform", "ubuntu"]
-  node_name   = "proxmox"
+  node_name   = var.pm_node
 
   clone {
     vm_id = 9000
