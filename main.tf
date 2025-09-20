@@ -47,7 +47,10 @@ resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
       - systemctl enable qemu-guest-agent
       - systemctl start qemu-guest-agent
       - echo "done" > /tmp/cloud-config.done
-      # create mountpoint
+      # there are three steps to sharing a host directory with a VM. this is step 3:
+      # telling our VM that if it ever detects a drive called "media_mount", that it
+      # can simply mount that drive at a local directory called /mnt/media.
+      # so /mnt/media will act as the symlink to folder on the other computer
       - mkdir -p /mnt/media
       - echo "media_mount /mnt/media virtiofs defaults 0 0" >> /etc/fstab
       - mount -a
@@ -112,9 +115,10 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     user_data_file_id = proxmox_virtual_environment_file.user_data_cloud_config.id
   }
 
-  # here, we are adding a hardware component to our VM (think of it like plugging in a physical drive)
-  # called "media_mount". "media_mount" is a proxmox directory mapping that we created
-  # as a resource below
+  # there are three steps to sharing a host directory with a VM. this is step 2:
+  # adding a hardware component to our VM called "media_mount". "media_mount" is
+  # a proxmox directory mapping that we created as a resource below.
+  # you can think of this as physically plugging-in the aforementioned USB drive to our VM
   virtiofs {
     mapping = "media_mount"
     cache = "always"
@@ -134,8 +138,12 @@ resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
   file_name = "noble-server-cloudimg-amd64.qcow2"
 }
 
+# there are three steps to sharing a host directory with a VM. this is step 1:
 # create a proxmox directory mapping called "media_mount" which will be hosted at the
 # special directory "/mnt/media"
+# we can think of this as creating a physical USB drive. when connecting this USB drive
+# to a computer, that computer will see a new folder. that new folder will be a symlink
+# to a folder on another computer
 resource "proxmox_virtual_environment_hardware_mapping_dir" "media_mount" {
   name     = "media_mount"
   comment  = "media bind mount"
