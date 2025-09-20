@@ -85,6 +85,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
 
   disk {
     datastore_id = "local-lvm"
+    # here, we are telling our VM to scaffold itself with the template we created with the `proxmox_virtual_environment_download_file` resource
     import_from  = proxmox_virtual_environment_download_file.ubuntu_cloud_image.id
     interface    = "virtio0"
     iothread     = true
@@ -98,10 +99,11 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   }
 
   # this initialization block works because:
-  # under the hood, bpg/proxmox created a VM template and stored it in the proxmox "local" storage
-  # this template is configured so that when a VM using this template boots for the first time,
-  # there will be a special cloud-init drive in it. this allows us to pass data into the VM
-  # like SSH keys, hostname, network config, etc
+  # the `proxmox_virtual_environment_download_file` resource created a VM template and
+  # stored it in the proxmox "local" storage. this template is configured so that when
+  # a VM using this template boots for the first time, there will be a special
+  # cloud-init drive in it. this allows us to pass data into the VM like SSH keys, hostname,
+  # network config, etc
   initialization {
     datastore_id = "local-lvm"
 
@@ -112,6 +114,8 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
       }
     }
 
+    # here, we pass in ssh-keys. we also pass in other setup logic that isn't natively
+    # supported by the bpg/proxmox provider.
     user_data_file_id = proxmox_virtual_environment_file.user_data_cloud_config.id
   }
 
