@@ -38,10 +38,18 @@ resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
         ssh_authorized_keys:
           - ${trimspace(data.local_file.ssh_public_key.content)}
         sudo: ALL=(ALL) NOPASSWD:ALL
-    # create mountpoint
+    packages:
+      - qemu-guest-agent
+      - net-tools
+      - curl
     runcmd:
+      # enable qemu-guest-agent
+      - systemctl enable qemu-guest-agent
+      - systemctl start qemu-guest-agent
+      - echo "done" > /tmp/cloud-config.done
+      # create mountpoint
       - mkdir -p /mnt/media
-      - echo "media /mnt/media virtiofs defaults 0 0" >> /etc/fstab
+      - echo "media_mount /mnt/media virtiofs defaults 0 0" >> /etc/fstab
       - mount -a
     EOF
 
@@ -54,6 +62,15 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   description = "Managed by Terraform"
   tags        = ["terraform", "ubuntu"]
   node_name   = var.node
+
+  # enable 'Qemu guest agent' so that proxmox can directly communicate with this VM
+  # to get its IP address and display it on the console. also so that it can cleanly and
+  # gracefully shut it down without having to just send an ACPI signal
+  # for us to enable this though, we have to make sure that we are running the qemu-guest-agent
+  # in our cloud-init
+  agent {
+    enabled = true
+  }
 
   cpu {
     cores = 2
@@ -94,6 +111,15 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
 
     user_data_file_id = proxmox_virtual_environment_file.user_data_cloud_config.id
   }
+
+  # here, we are adding a hardware component to our VM (think of it like plugging in a physical drive)
+  # called "media_mount". "media_mount" is a proxmox directory mapping that we created
+  # as a resource below
+  virtiofs {
+    mapping = "media_mount"
+    cache = "always"
+    direct_io = true
+  }
 }
 
 # here, we are telling bpg/proxmox to create a VM template that is used by our ubuntu VM.
@@ -108,7 +134,8 @@ resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
   file_name = "noble-server-cloudimg-amd64.qcow2"
 }
 
-# Map the host directory to a virtiofs resource
+# create a proxmox directory mapping called "media_mount" which will be hosted at the
+# special directory "/mnt/media"
 resource "proxmox_virtual_environment_hardware_mapping_dir" "media_mount" {
   name     = "media_mount"
   comment  = "media bind mount"
