@@ -10,16 +10,6 @@ The MVP delivers a fully working `stc setup` that provisions a set of Debian hos
 
 ---
 
-## Notes for all tasks
-
-**Integration tests:** Command-level behavior must be tested by invoking the compiled `stc` binary in a temporary directory populated with the necessary files and asserting on stdout, stderr, exit code, and generated file contents. The specific framework or format for writing these tests is up to the implementor — use whatever your language ecosystem provides. The requirement is the test coverage, not the mechanism.
-
-**Unit tests:** Business logic that does not involve running the binary (parsing, rendering, resolving) must be covered by unit tests.
-
-**Separation of business logic and CLI wiring:** All business logic must be callable without going through the CLI layer. CLI command handlers should be thin wires that parse flags, call into the business logic layer, and print results. This is the single most important architectural rule in the project — it is what allows `stc setup` to reuse the logic of `inventory generate`, `ansible bootstrap-host`, and so on without duplication, and it is what makes the codebase testable at the unit level. Every task that implements a command is expected to follow this structure. If a later task requires refactoring earlier code to better satisfy this principle, that refactoring is expected and costed into the later task's estimate.
-
----
-
 ## Milestone 1 — Foundation
 
 The project builds and `stc.yml` parses correctly.

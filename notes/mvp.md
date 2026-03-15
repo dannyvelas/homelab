@@ -21,24 +21,6 @@ end-to-end from a single command. It includes every command `stc setup` depends 
 
 **Go templates:** All commands that generate text files or formatted output (inventory YAML, SSH config blocks, diagnostic table) must use `text/template` from the Go standard library. This makes the output format easy to read and modify — you can open the template and immediately see what the generated file will look like.
 
-**Script tests:** Command-level behavior must be covered by txtar script tests using the `github.com/rogpeppe/go-internal/testscript` package. These tests compile the `stc` binary, run it inside a temporary directory populated with the files defined in the test, and assert on stdout, stderr, exit code, and generated file contents. Test files live in `testdata/scripts/`. Each `.txtar` file covers one scenario. The format is:
-
-```
-# Description of the test
-exec stc <command> [flags]
-stdout 'expected pattern'
-exists .generated/some/file
-
--- stc.yml --
-<file contents>
-```
-
-Verbs: `exec` (expect exit 0), `! exec` (expect non-zero), `stdout`, `stderr`, `exists`,
-`grep <pattern> <file>`, `env KEY=VALUE`.
-
-**Unit tests:** Logic that does not involve running the binary (parsing, rendering, resolving) must be covered by standard Go unit tests (`*_test.go` files).
-
-**Separation of business logic and CLI wiring:** All business logic must live in `internal/` and be callable without going through the CLI layer. Command handlers in `cmd/stc/` should be thin wires that parse flags, call into `internal/`, and print results. This is the single most important architectural rule in the project — it is what allows `stc setup` to reuse the logic of `inventory generate`, `ansible bootstrap-host`, and so on without duplication, and it is what makes the codebase testable at the unit level. Every task that implements a command is expected to follow this structure. If a later task requires refactoring earlier code to better satisfy this principle, that refactoring is expected and costed into the later task's estimate.
 
 ---
 
